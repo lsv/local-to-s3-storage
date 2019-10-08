@@ -45,6 +45,7 @@ class CopyCommand extends Command
         $this
             ->setName('local-to-s3-copy')
             ->setDescription('Copy files from local to a s3 aws storage (DO spaces included)')
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Only print which files would be copied')
             ->addOption('overwrite', null, InputOption::VALUE_NONE, 'Allow overwrite if file already exists on source')
             ->addOption('private', null, InputOption::VALUE_NONE, 'Set files as private on source');
     }
@@ -79,28 +80,37 @@ class CopyCommand extends Command
     {
         $output->writeln('Handling file: "'.$filedata['path'].'"');
         try {
-            $method = 'writeStream';
-            if ($this->input->getOption('overwrite')) {
-                $method = 'putStream';
-            }
-
-            $write = $this->target->$method(
-                $filedata['path'],
-                $this->source->readStream($filedata['path']),
-                [
-                    'visibility' => $this->input->getOption('private') ? 'private' : 'public'
-                ]
-            );
-            if ($write) {
-                $output->writeln('<info>'.$filedata['path'].' copied successfully</info>');
+            if (! $this->input->getOption('dry-run')) {
+                $write = $this->target->{$this->getWriteMethod()}(
+                    $filedata['path'],
+                    $this->source->readStream($filedata['path']),
+                    [
+                        'visibility' => $this->input->getOption('private') ? 'private' : 'public'
+                    ]
+                );
+                if ($write) {
+                    $output->writeln('<info>'.$filedata['path'].'</info> copied successfully');
+                } else {
+                    $output->writeln('<error>'.$filedata['path'].'</error> not copied successfully');
+                }
             } else {
-                $output->writeln('<error>'.$filedata['path'].' not copied successfully</error>');
+                $output->writeln('<info>'.$filedata['path'].'</info> would be copied');
             }
         } catch (FileExistsException $e) {
-            $output->writeln('<error>'.$filedata['path'].' already exists on target</error>');
+            $output->writeln('<error>'.$filedata['path'].'</error> already exists on target');
         } catch (FileNotFoundException $e) {
-            $output->writeln('<error>'.$filedata['path'].' does not exists on source</error>');
+            $output->writeln('<error>'.$filedata['path'].'</error> does not exists on source');
         }
+    }
+
+    private function getWriteMethod(): string
+    {
+        $method = 'writeStream';
+        if ($this->input->getOption('overwrite')) {
+            $method = 'putStream';
+        }
+
+        return $method;
     }
 
 }

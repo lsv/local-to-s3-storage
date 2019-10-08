@@ -26,13 +26,25 @@ $s3bucket = $_ENV['DO_SPACES_BUCKETNAME'];
 
 $sourceAdapter = new SftpAdapter(
     [
-        'host' => $_ENV['SFTP_HOST'],
-        'port' => $_ENV['SFTP_PORT'],
-        'username' => $_ENV['SFTP_USERNAME'],
-        'password' => $_ENV['SFTP_PASSWORD'],
-        'root' => $_ENV['SFTP_STARTDIR'],
+        'host' => $_ENV['SSH_HOST'],
+        'port' => $_ENV['SSH_PORT'],
+        'username' => $_ENV['SSH_USER'],
+        'password' => 'password',
+        'privateKey' => $_ENV['SSH_PATH_PRIVATEKEY'],
+        'passphrase' => $_ENV['SSH_PATH_PRIVATEKEY_PASS'],
+        'root' => $_ENV['SSH_FILE_SOURCE_DIR'],
     ]
 );
+
+//$configurator = (new SshShellConfigurator())
+//    ->setRoot($_ENV['SSH_FILE_SOURCE_DIR'])
+//    ->setUser($_ENV['SSH_USER'])
+//    ->setHost($_ENV['SSH_HOST'])
+//    ->setPrivateKey($_ENV['SSH_PATH_PRIVATEKEY'])
+//    ->setPort($_ENV['SSH_PORT']);
+//
+//$sourceAdapter = (new SshShellFactory())->createAdapter($configurator);
+
 $sourceFs = new Filesystem($sourceAdapter);
 
 $targetClient = new S3Client(
